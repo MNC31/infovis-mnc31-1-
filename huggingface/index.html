@@ -131,6 +131,108 @@
       <p class="sub">Identifiers are abbreviated. Record text is intentionally not reproduced; the source dataset describes its values as synthetic canaries. These are embedded source-derived label summaries, not simulated observations.</p>
       <div id="records" aria-live="polite"></div>
     </section>
+    <!-- =========================================================
+     DATASET COMPARISON
+     ========================================================= -->
+<section class="comparison-section" id="dataset-comparison">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Cross-dataset comparison</p>
+      <h2>What sensitive information remains represented?</h2>
+      <p class="section-description">
+        This comparison examines how sensitive or identifying information is
+        represented across the PrivacyLeak-PII snapshot and the
+        cost-of-living dataset used by the GitHub project.
+      </p>
+    </div>
+  </div>
+
+  <!-- Overall comparison -->
+  <div class="comparison-grid">
+    <div class="comparison-card">
+      <span class="comparison-label">PrivacyLeak-PII</span>
+      <strong id="hf-total">—</strong>
+      <span>records in local snapshot</span>
+    </div>
+
+    <div class="comparison-card">
+      <span class="comparison-label">Cost of Living</span>
+      <strong id="cost-total">—</strong>
+      <span>records analyzed</span>
+    </div>
+
+    <div class="comparison-card">
+      <span class="comparison-label">Categories</span>
+      <strong id="category-total">—</strong>
+      <span>sensitive / identifying categories</span>
+    </div>
+  </div>
+
+  <!-- Category comparison -->
+  <div class="comparison-panel">
+    <div class="comparison-panel-header">
+      <div>
+        <p class="eyebrow">Category comparison</p>
+        <h3>Representation by category</h3>
+      </div>
+
+      <select id="comparisonMetric" class="comparison-select">
+        <option value="percentage">Percentage of records</option>
+        <option value="count">Record count</option>
+      </select>
+    </div>
+
+    <div id="categoryComparison" class="category-comparison">
+      <div class="comparison-loading">
+        Loading comparison…
+      </div>
+    </div>
+  </div>
+
+  <!-- Difference view -->
+  <div class="comparison-panel">
+    <div class="comparison-panel-header">
+      <div>
+        <p class="eyebrow">Visibility gap</p>
+        <h3>Where is sensitive information more represented?</h3>
+      </div>
+    </div>
+
+    <div id="differenceView" class="difference-view">
+      <div class="comparison-loading">
+        Calculating representation differences…
+      </div>
+    </div>
+  </div>
+
+  <!-- Interpretation -->
+  <div class="comparison-note">
+    <div>
+      <p class="eyebrow">Interpretation</p>
+      <h3>How to read this comparison</h3>
+    </div>
+
+    <div class="interpretation-content">
+      <p>
+        A higher percentage indicates that a category is more frequently
+        represented in the corresponding dataset. This does not mean that
+        the information was successfully extracted from a model, nor does
+        it establish a formal differential-privacy guarantee.
+      </p>
+
+      <p>
+        The PrivacyLeak-PII dataset is a synthetic benchmark designed to
+        study privacy leakage and machine unlearning. The local file used
+        here is a snapshot rather than the complete Hugging Face dataset.
+      </p>
+
+      <p>
+        The comparison therefore describes <strong>representation in the
+        available data</strong>, not a measurement of privacy protection.
+      </p>
+    </div>
+  </div>
+</section>
     <footer>
       <p><strong>Dataset attribution:</strong> <a href="https://huggingface.co/datasets/raayraay/privacyleak-pii" target="_blank" rel="noopener noreferrer">raayraay/privacyleak-pii on Hugging Face</a>. Source viewer fields represented in the original artifact: <code>text</code>, <code>piispans</code>, <code>contexttype</code>, <code>locale</code>, <code>iscanary</code>, <code>sampleid</code>, and <code>inforgetset</code>.</p>
       <p>Data-handling note: all observations embedded in this standalone page are source-derived public-viewer summaries. The page makes no network request, does not invent replacement values, and does not present these rows as evidence of real-world personal-data exposure.</p>
