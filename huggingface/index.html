@@ -538,12 +538,23 @@ function analyzeDataset(rows, categories) {
 function analyzePrivacyLeak(rows) {
   if (!rows.length) return {};
 
+  /*
+   * The local PrivacyLeak-PII snapshot does not use a
+   * "pii_type" column. Its PII information is represented
+   * in the piispans field.
+   *
+   * Example:
+   * piispans = ["name","ssn","phone","email"]
+   *
+   * We therefore read piispans directly rather than trying
+   * to infer PII categories from column names.
+   */
+
   const possibleColumns = [
-    "pii_type",
-    "pii_types",
-    "pii",
-    "PII Type",
-    "PII"
+    "piispans",
+    "pii_spans",
+    "PII spans",
+    "PII Spans"
   ];
 
   const piiColumn = possibleColumns.find(column =>
@@ -551,27 +562,113 @@ function analyzePrivacyLeak(rows) {
   );
 
   if (!piiColumn) {
-    return analyzeDataset(rows, CATEGORY_PATTERNS);
+    console.warn(
+      "PrivacyLeak-PII snapshot does not contain a piispans column.",
+      Object.keys(rows[0])
+    );
+
+    return {};
   }
 
   const counts = {};
 
   rows.forEach(row => {
-    const raw = String(row[piiColumn] || "").trim();
+    let raw = row[piiColumn];
+
+    if (raw === undefined || raw === null) return;
+
+    raw = String(raw).trim();
 
     if (!raw) return;
 
     /*
-     * Some datasets may contain multiple labels.
+     * The CSV may contain the PII spans as a JSON-style array,
+     * for example:
+     *
+     * ["name","ssn","phone","email"]
+     *
+     * Try to parse that first.
      */
-    const labels = raw
-      .split(/[;,|]/)
-      .map(label => label.trim())
-      .filter(Boolean);
+    let labels = [];
 
-    labels.forEach(label => {
-      counts[label] = (counts[label] || 0) + 1;
-    });
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (Array.isArray(parsed)) {
+        labels = parsed;
+      } else {
+        labels = [parsed];
+      }
+    } catch (error) {
+      /*
+       * Fallback for CSV representations that are not valid JSON.
+       */
+      labels = raw
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .split(/[;,|]/)
+        .map(label => label.trim())
+        .map(label => label.replace(/^["']|["']$/g, ""))
+        .filter(Boolean);
+    }
+
+   labels.forEach(label => {
+  const rawLabel = String(label).trim().toLowerCase();
+
+  if (!rawLabel) return;
+
+  let category;
+
+  switch (rawLabel) {
+    case "name":
+    case "full-name":
+    case "full_name":
+      category = "Full name";
+      break;
+
+    case "email":
+      category = "Email";
+      break;
+
+    case "phone":
+      category = "Phone";
+      break;
+
+    case "address":
+      category = "Address";
+      break;
+
+    case "ssn":
+    case "social-security-number":
+      category = "Government / ID";
+      break;
+
+    case "passport":
+      category = "Government / ID";
+      break;
+
+    case "credit-card":
+    case "credit_card":
+    case "iban":
+      category = "Financial";
+      break;
+
+    case "api-key":
+    case "api_key":
+    case "ip-address":
+    case "ip_address":
+    case "mac-address":
+    case "mac_address":
+      category = "Technical";
+      break;
+
+    default:
+      category = String(label).trim();
+  }
+
+  counts[category] =
+    (counts[category] || 0) + 1;
+});
   });
 
   const result = {};
