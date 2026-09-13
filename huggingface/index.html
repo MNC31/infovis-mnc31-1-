@@ -288,6 +288,573 @@
       }).join("");
     }
     try { init(); } catch (error) { $("#loadStatus").innerHTML = '<span class="dot" style="background:#f87171" aria-hidden="true"></span><span>Embedded snapshot unavailable</span>'; $("#error").style.display = "block"; $("#error").textContent = error.message; }
+  <script>
+/* =========================================================
+   CROSS-DATASET COMPARISON
+   ========================================================= */
+
+const COMPARISON_CONFIG = {
+  privacyLeak:
+    "./privacyleak-pii/privacyleak-pii-snapshot.csv",
+
+  costOfLiving:
+    "./comparison/cost_of_living_us.csv"
+};
+
+
+/*
+ * Maps possible column names to conceptual categories.
+ *
+ * The PrivacyLeak-PII snapshot contains explicit PII labels.
+ * The cost-of-living dataset may use different column names,
+ * so this function looks for common variants.
+ */
+const CATEGORY_PATTERNS = {
+  "Full name": [
+    "name",
+    "full_name",
+    "fullname",
+    "first_name",
+    "last_name"
+  ],
+
+  "Email": [
+    "email",
+    "email_address"
+  ],
+
+  "Phone": [
+    "phone",
+    "phone_number",
+    "telephone"
+  ],
+
+  "Address": [
+    "address",
+    "street",
+    "location"
+  ],
+
+  "Date of birth": [
+    "dob",
+    "date_of_birth",
+    "birth_date",
+    "birthday"
+  ],
+
+  "IP address": [
+    "ip",
+    "ip_address"
+  ],
+
+  "Financial": [
+    "income",
+    "salary",
+    "cost",
+    "price",
+    "rent",
+    "mortgage",
+    "expense",
+    "financial"
+  ],
+
+  "Geographic": [
+    "city",
+    "state",
+    "zip",
+    "zipcode",
+    "postal",
+    "latitude",
+    "longitude",
+    "location"
+  ]
+};
+
+
+/* ---------- CSV parser ---------- */
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let value = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"' && insideQuotes && next === '"') {
+      value += '"';
+      i++;
+      continue;
+    }
+
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+
+    if (char === "," && !insideQuotes) {
+      row.push(value);
+      value = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !insideQuotes) {
+      if (char === "\r" && next === "\n") i++;
+
+      row.push(value);
+
+      if (row.some(cell => cell.trim() !== "")) {
+        rows.push(row);
+      }
+
+      row = [];
+      value = "";
+      continue;
+    }
+
+    value += char;
+  }
+
+  if (value.length || row.length) {
+    row.push(value);
+    rows.push(row);
+  }
+
+  if (!rows.length) return [];
+
+  const headers = rows[0].map(h =>
+    h.trim().replace(/^"|"$/g, "")
+  );
+
+  return rows.slice(1).map(row => {
+    const object = {};
+
+    headers.forEach((header, index) => {
+      object[header] = (row[index] || "").trim();
+    });
+
+    return object;
+  });
+}
+
+
+/* ---------- Helpers ---------- */
+
+function normalize(text) {
+  return String(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "_");
+}
+
+
+function findMatchingColumns(rows, patterns) {
+  if (!rows.length) return [];
+
+  const columns = Object.keys(rows[0]);
+
+  return columns.filter(column => {
+    const normalizedColumn = normalize(column);
+
+    return patterns.some(pattern =>
+      normalizedColumn.includes(normalize(pattern))
+    );
+  });
+}
+
+
+function countCategory(rows, patterns) {
+  const columns = findMatchingColumns(rows, patterns);
+
+  if (!columns.length) return 0;
+
+  let count = 0;
+
+  rows.forEach(row => {
+    const hasValue = columns.some(column => {
+      const value = row[column];
+
+      return (
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== "" &&
+        String(value).trim().toLowerCase() !== "null" &&
+        String(value).trim().toLowerCase() !== "na"
+      );
+    });
+
+    if (hasValue) count++;
+  });
+
+  return count;
+}
+
+
+function percentage(count, total) {
+  if (!total) return 0;
+  return (count / total) * 100;
+}
+
+
+function formatNumber(value) {
+  return Number(value).toLocaleString();
+}
+
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return "0%";
+
+  if (value < 0.01 && value > 0) {
+    return "<0.01%";
+  }
+
+  return value.toFixed(2) + "%";
+}
+
+
+/* ---------- Dataset analysis ---------- */
+
+function analyzeDataset(rows, categories) {
+  const result = {};
+
+  Object.entries(categories).forEach(([category, patterns]) => {
+    const count = countCategory(rows, patterns);
+
+    result[category] = {
+      count,
+      percentage: percentage(count, rows.length)
+    };
+  });
+
+  return result;
+}
+
+
+/*
+ * PrivacyLeak-PII contains an explicit PII category field.
+ * We first look for that field so that the HF dataset does
+ * not depend on guessing from column names.
+ */
+function analyzePrivacyLeak(rows) {
+  if (!rows.length) return {};
+
+  const possibleColumns = [
+    "pii_type",
+    "pii_types",
+    "pii",
+    "PII Type",
+    "PII"
+  ];
+
+  const piiColumn = possibleColumns.find(column =>
+    Object.prototype.hasOwnProperty.call(rows[0], column)
+  );
+
+  if (!piiColumn) {
+    return analyzeDataset(rows, CATEGORY_PATTERNS);
+  }
+
+  const counts = {};
+
+  rows.forEach(row => {
+    const raw = String(row[piiColumn] || "").trim();
+
+    if (!raw) return;
+
+    /*
+     * Some datasets may contain multiple labels.
+     */
+    const labels = raw
+      .split(/[;,|]/)
+      .map(label => label.trim())
+      .filter(Boolean);
+
+    labels.forEach(label => {
+      counts[label] = (counts[label] || 0) + 1;
+    });
+  });
+
+  const result = {};
+
+  Object.entries(counts).forEach(([category, count]) => {
+    result[category] = {
+      count,
+      percentage: percentage(count, rows.length)
+    };
+  });
+
+  return result;
+}
+
+
+/* ---------- Rendering ---------- */
+
+function renderCategoryComparison(hfData, costData) {
+  const container =
+    document.getElementById("categoryComparison");
+
+  const categories = new Set([
+    ...Object.keys(hfData),
+    ...Object.keys(costData)
+  ]);
+
+  const sortedCategories =
+    [...categories].sort((a, b) => a.localeCompare(b));
+
+  container.innerHTML = "";
+
+  sortedCategories.forEach(category => {
+    const hf = hfData[category] || {
+      count: 0,
+      percentage: 0
+    };
+
+    const cost = costData[category] || {
+      count: 0,
+      percentage: 0
+    };
+
+    const row = document.createElement("div");
+    row.className = "category-row";
+
+    row.dataset.hfCount = hf.count;
+    row.dataset.costCount = cost.count;
+    row.dataset.hfPercentage = hf.percentage;
+    row.dataset.costPercentage = cost.percentage;
+
+    row.innerHTML = `
+      <div class="category-name">
+        ${category}
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span>PrivacyLeak-PII</span>
+          <span class="hf-value">
+            ${formatPercent(hf.percentage)}
+          </span>
+        </div>
+
+        <div class="bar-track">
+          <div
+            class="bar"
+            style="width:${Math.min(hf.percentage, 100)}%"
+          ></div>
+        </div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-label">
+          <span>Cost of Living</span>
+          <span class="cost-value">
+            ${formatPercent(cost.percentage)}
+          </span>
+        </div>
+
+        <div class="bar-track">
+          <div
+            class="bar cost"
+            style="width:${Math.min(cost.percentage, 100)}%"
+          ></div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+}
+
+
+function renderDifference(hfData, costData) {
+  const container =
+    document.getElementById("differenceView");
+
+  const categories = new Set([
+    ...Object.keys(hfData),
+    ...Object.keys(costData)
+  ]);
+
+  const differences = [...categories].map(category => {
+    const hf = hfData[category]?.percentage || 0;
+    const cost = costData[category]?.percentage || 0;
+
+    return {
+      category,
+      difference: hf - cost
+    };
+  });
+
+  differences.sort(
+    (a, b) => Math.abs(b.difference) - Math.abs(a.difference)
+  );
+
+  container.innerHTML = "";
+
+  differences.forEach(item => {
+    const value = item.difference;
+
+    const width = Math.min(
+      Math.abs(value),
+      100
+    ) / 2;
+
+    const element = document.createElement("div");
+    element.className = "difference-item";
+
+    element.innerHTML = `
+      <div class="category-name">
+        ${item.category}
+      </div>
+
+      <div class="difference-track">
+        <div class="difference-center"></div>
+
+        ${
+          value >= 0
+            ? `<div
+                class="difference-positive"
+                style="width:${width}%"
+              ></div>`
+            : `<div
+                class="difference-negative"
+                style="width:${width}%"
+              ></div>`
+        }
+      </div>
+
+      <div class="difference-value">
+        ${value >= 0 ? "+" : ""}
+        ${formatPercent(value)}
+      </div>
+    `;
+
+    container.appendChild(element);
+  });
+}
+
+
+/* ---------- Metric selector ---------- */
+
+function updateComparisonMetric(metric) {
+  document.querySelectorAll(".category-row").forEach(row => {
+    const hfCount = Number(row.dataset.hfCount);
+    const costCount = Number(row.dataset.costCount);
+
+    const hfPercentage = Number(row.dataset.hfPercentage);
+    const costPercentage = Number(row.dataset.costPercentage);
+
+    const hfValue =
+      metric === "count"
+        ? formatNumber(hfCount)
+        : formatPercent(hfPercentage);
+
+    const costValue =
+      metric === "count"
+        ? formatNumber(costCount)
+        : formatPercent(costPercentage);
+
+    row.querySelector(".hf-value").textContent = hfValue;
+    row.querySelector(".cost-value").textContent = costValue;
+
+    /*
+     * Bars always use percentage because this keeps the visual
+     * comparison meaningful even when dataset sizes differ.
+     */
+  });
+}
+
+
+/* ---------- Load data ---------- */
+
+async function initializeComparison() {
+  try {
+    const [hfResponse, costResponse] =
+      await Promise.all([
+        fetch(COMPARISON_CONFIG.privacyLeak),
+        fetch(COMPARISON_CONFIG.costOfLiving)
+      ]);
+
+    if (!hfResponse.ok) {
+      throw new Error(
+        "Could not load PrivacyLeak-PII snapshot."
+      );
+    }
+
+    if (!costResponse.ok) {
+      throw new Error(
+        "Could not load cost-of-living dataset."
+      );
+    }
+
+    const hfCSV = await hfResponse.text();
+    const costCSV = await costResponse.text();
+
+    const hfRows = parseCSV(hfCSV);
+    const costRows = parseCSV(costCSV);
+
+    document.getElementById("hf-total").textContent =
+      formatNumber(hfRows.length);
+
+    document.getElementById("cost-total").textContent =
+      formatNumber(costRows.length);
+
+    const hfAnalysis =
+      analyzePrivacyLeak(hfRows);
+
+    const costAnalysis =
+      analyzeDataset(
+        costRows,
+        CATEGORY_PATTERNS
+      );
+
+    const categories = new Set([
+      ...Object.keys(hfAnalysis),
+      ...Object.keys(costAnalysis)
+    ]);
+
+    document.getElementById("category-total").textContent =
+      categories.size;
+
+    renderCategoryComparison(
+      hfAnalysis,
+      costAnalysis
+    );
+
+    renderDifference(
+      hfAnalysis,
+      costAnalysis
+    );
+
+    const selector =
+      document.getElementById("comparisonMetric");
+
+    selector.addEventListener("change", event => {
+      updateComparisonMetric(event.target.value);
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById(
+      "categoryComparison"
+    ).innerHTML = `
+      <div class="comparison-loading">
+        Unable to load the comparison data.
+        Please check that both CSV files are present
+        in the expected folders.
+      </div>
+    `;
+
+    document.getElementById(
+      "differenceView"
+    ).innerHTML = "";
+  }
+}
+
+
+initializeComparison();
+</script>
   </script>
 </body>
 </html>
