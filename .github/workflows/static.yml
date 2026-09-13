@@ -1,4 +1,4 @@
-name: Deploy Vue app to Pages
+name: Deploy Hugging Face site to Pages
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     environment:
@@ -26,28 +26,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm install
-
-      - name: Build Vue app
-        working-directory: frontend
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider
-        run: npm run build
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload built site
+      - name: Upload Hugging Face site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: huggingface
 
       - name: Deploy to GitHub Pages
         id: deployment
