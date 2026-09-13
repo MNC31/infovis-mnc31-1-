@@ -32,7 +32,7 @@ const routes = [
 
 const router = createRouter({
   routes,
-  history: createWebHistory()
+  history: createWebHistory('/infovis-mnc31/')
 })
 
 export default router
