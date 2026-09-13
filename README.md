@@ -10,7 +10,7 @@ This project uses two complementary sources:
 
 The original application is based on the Defogger repository:
 
-* Repository: `MNC31/infovis-mnc31`
+* Repository: `Vanellope7/Defogger`
 * Platform: GitHub
 * Frontend: Vue
 * Backend: Django
