@@ -48,14 +48,55 @@
     .swatch { width:.75rem; height:.75rem; border-radius:3px; background:var(--blue); }
     .swatch.retained { background:var(--retained); }
     .swatch.forgot { background:var(--forgot); }
-    .comparison { margin-top:1rem; }
-    .comparison-chart { display:grid; gap:.8rem; }
-    .comparison-row { display:grid; grid-template-columns:minmax(105px,1fr) minmax(150px,3.4fr) 100px; gap:.65rem; align-items:center; }
-    .stack-track { display:flex; height:1.3rem; overflow:hidden; border-radius:999px; background:#eaf0f6; }
-    .stack { height:100%; min-width:0; transition:width .35s ease; }
-    .stack.retained { background:var(--retained); }
-    .stack.forgot { background:var(--forgot); }
-    .comparison-value { text-align:right; color:var(--muted); font-size:.8rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .comparison { margin-top:1.25rem; }
+    .comparison-section { margin-top:1.25rem; }
+    .section-heading { margin-bottom:1rem; }
+    .section-description { max-width:850px; margin:.35rem 0 0; color:var(--muted); }
+    .comparison-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin-bottom:1rem; }
+    .comparison-card { padding:1rem 1.1rem; background:#fff; border:1px solid #e4e7ec; border-radius:1rem; box-shadow:var(--shadow); }
+    .comparison-card span { display:block; color:var(--muted); font-size:.82rem; }
+    .comparison-card .comparison-label { color:#344054; font-weight:800; }
+    .comparison-card strong { display:block; margin:.15rem 0; font-size:1.8rem; letter-spacing:-.04em; }
+    .comparison-panel { margin-top:1rem; padding:1.25rem; background:#fff; border:1px solid #e4e7ec; border-radius:1rem; box-shadow:var(--shadow); overflow:hidden; }
+    .comparison-panel-header { display:flex; justify-content:space-between; gap:1rem; align-items:end; margin-bottom:1rem; }
+    .comparison-panel-header h3,.comparison-note h3 { margin:.1rem 0 0; font-size:1.2rem; letter-spacing:-.02em; }
+    .comparison-select { min-width:175px; }
+    .comparison-loading { color:var(--muted); padding:1rem 0; }
+    .butterfly-legend { display:flex; justify-content:space-between; gap:1rem; margin-bottom:.65rem; padding:0 .5rem; color:#344054; font-size:.82rem; font-weight:800; }
+    .butterfly-legend span:first-child { color:var(--violet); }
+    .butterfly-legend span:last-child { color:var(--blue); }
+    .butterfly-scale { display:grid; grid-template-columns:1fr 170px 1fr; gap:1rem; margin-bottom:.35rem; color:#98a2b3; font-size:.72rem; font-weight:700; }
+    .butterfly-scale div:first-child { text-align:left; }
+    .butterfly-scale div:nth-child(2) { text-align:center; }
+    .butterfly-scale div:last-child { text-align:right; }
+    .butterfly-chart { display:grid; gap:.28rem; }
+    .butterfly-row { display:grid; grid-template-columns:minmax(0,1fr) 170px minmax(0,1fr); gap:1rem; align-items:center; min-height:2rem; }
+    .butterfly-side { height:1.05rem; display:flex; align-items:center; }
+    .butterfly-side.left { justify-content:flex-end; }
+    .butterfly-side.right { justify-content:flex-start; }
+    .butterfly-track { width:100%; height:1.05rem; background:#f2f4f7; overflow:hidden; }
+    .butterfly-side.left .butterfly-track { display:flex; justify-content:flex-end; border-radius:.35rem 0 0 .35rem; }
+    .butterfly-side.right .butterfly-track { border-radius:0 .35rem .35rem 0; }
+    .butterfly-bar { height:100%; transition:width .35s ease; }
+    .butterfly-bar.privacy { background:linear-gradient(90deg,#8b5cf6,#6d28d9); }
+    .butterfly-bar.nhanes { background:linear-gradient(90deg,#2563eb,#60a5fa); }
+    .butterfly-value { position:absolute; font-size:.72rem; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .butterfly-side.left .butterfly-value { right:calc(100% + .4rem); color:#6d28d9; }
+    .butterfly-side.right .butterfly-value { left:calc(100% + .4rem); color:#2563eb; }
+    .butterfly-center { text-align:center; color:#344054; font-size:.78rem; font-weight:750; overflow-wrap:anywhere; }
+    .heatmap-wrap { overflow-x:auto; padding-bottom:.2rem; }
+    .heatmap { min-width:560px; display:grid; grid-template-columns:190px repeat(2,minmax(150px,1fr)); border:1px solid #e4e7ec; border-radius:.8rem; overflow:hidden; }
+    .heatmap-cell { min-height:3.2rem; padding:.65rem .7rem; border-right:1px solid rgba(255,255,255,.75); border-bottom:1px solid rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; text-align:center; font-size:.78rem; font-variant-numeric:tabular-nums; }
+    .heatmap-cell.header { min-height:2.8rem; background:#f8fafc; color:#344054; font-weight:800; }
+    .heatmap-cell.label { justify-content:flex-start; background:#f8fafc; color:#344054; font-weight:750; }
+    .heatmap-cell.privacy { color:#3b0764; }
+    .heatmap-cell.nhanes { color:#082f49; }
+    .heatmap-legend { display:flex; align-items:center; gap:.65rem; margin-top:.85rem; color:var(--muted); font-size:.78rem; }
+    .heatmap-gradient { flex:0 0 170px; height:.65rem; border-radius:999px; background:linear-gradient(90deg,#f5f3ff,#8b5cf6,#2563eb); }
+    .comparison-note { display:grid; grid-template-columns:.8fr 2fr; gap:1rem; margin-top:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e4e7ec; border-radius:1rem; }
+    .interpretation-content p { margin:.15rem 0 .7rem; color:var(--muted); }
+    @media (max-width:800px) { .comparison-grid { grid-template-columns:1fr; } .comparison-panel-header { align-items:stretch; flex-direction:column; } .comparison-select { width:100%; } .comparison-note { grid-template-columns:1fr; } .butterfly-row { grid-template-columns:minmax(0,1fr) 135px minmax(0,1fr); gap:.55rem; } .butterfly-scale { grid-template-columns:1fr 135px 1fr; gap:.55rem; } }
+    @media (max-width:430px) { .comparison-panel { padding:1rem; } .butterfly-row { grid-template-columns:minmax(0,1fr) 105px minmax(0,1fr); gap:.35rem; } .butterfly-scale { grid-template-columns:1fr 105px 1fr; gap:.35rem; } .butterfly-center { font-size:.68rem; } .heatmap { min-width:500px; grid-template-columns:155px repeat(2,minmax(140px,1fr)); } }
     .split { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:1rem; }
     .split article { padding:1rem; border-radius:.8rem; background:#f8fafc; border:1px solid #e4e7ec; }
     .split h3 { margin:0; font-size:.9rem; }
@@ -168,40 +209,37 @@
     </div>
   </div>
 
-  <!-- Category comparison -->
+  <!-- Butterfly comparison -->
   <div class="comparison-panel">
     <div class="comparison-panel-header">
       <div>
         <p class="eyebrow">Category comparison</p>
-        <h3>Representation by category</h3>
+        <h3>Representations by category</h3>
+        <p class="sub">A mirrored view makes it easy to compare the percentage of records containing each category in PrivacyLeak-PII versus NHANES.</p>
       </div>
-
-      <select id="comparisonMetric" class="comparison-select">
+      <select id="comparisonMetric" class="comparison-select" aria-label="Comparison metric">
         <option value="percentage">Percentage of records</option>
         <option value="count">Record count</option>
       </select>
     </div>
-
-    <div id="categoryComparison" class="category-comparison">
-      <div class="comparison-loading">
-        Loading comparison…
-      </div>
+    <div class="butterfly-legend"><span>PrivacyLeak-PII</span><span>NHANES</span></div>
+    <div class="butterfly-scale" aria-hidden="true"><div>Higher ←</div><div>Category</div><div>→ Higher</div></div>
+    <div id="categoryComparison" class="butterfly-chart" aria-live="polite">
+      <div class="comparison-loading">Loading comparison…</div>
     </div>
   </div>
 
-  <!-- Difference view -->
+  <!-- Heatmap difference view -->
   <div class="comparison-panel">
     <div class="comparison-panel-header">
       <div>
-        <p class="eyebrow">Visibility gap</p>
-        <h3>How does sensitive information differ by dataset?</h3>
+        <p class="eyebrow">Difference view</p>
+        <h3>How does this sensitive data differ by dataset?</h3>
+        <p class="sub">The heatmap uses the same category definitions as the butterfly chart. Darker cells indicate a higher share of records in that dataset; the values are not a privacy score.</p>
       </div>
     </div>
-
     <div id="differenceView" class="difference-view">
-      <div class="comparison-loading">
-        Calculating representation differences…
-      </div>
+      <div class="comparison-loading">Calculating representation differences…</div>
     </div>
   </div>
 
@@ -632,160 +670,105 @@ function analyzePrivacyLeak(rows) {
 
 /* ---------- Rendering ---------- */
 
-function renderCategoryComparison(hfData, nhanesData) {
-  const container =
-    document.getElementById("categoryComparison");
+function renderCategoryComparison(hfData, nhanesData, metric = "percentage") {
+  const container = document.getElementById("categoryComparison");
+  const categories = [...new Set([...Object.keys(hfData), ...Object.keys(nhanesData)])];
 
-  const categories = new Set([
-    ...Object.keys(hfData),
-    ...Object.keys(nhanesData)
-  ]);
-
-  const sortedCategories =
-    [...categories].sort((a, b) => a.localeCompare(b));
-
-  container.innerHTML = "";
-
-  sortedCategories.forEach(category => {
-    const hf = hfData[category] || {
-      count: 0,
-      percentage: 0
-    };
-
-    const nhanes = nhanesData[category] || { count: 0, percentage: 0 };
-
-    const row = document.createElement("div");
-    row.className = "category-row";
-
-    row.dataset.hfCount = hf.count;
-    row.dataset.nhanesCount = nhanes.count;
-    row.dataset.hfPercentage = hf.percentage;
-    row.dataset.nhanesPercentage = nhanes.percentage;
-
-    row.innerHTML = `
-      <div class="category-name">
-        ${category}
-      </div>
-
-      <div class="bar-group">
-        <div class="bar-label">
-          <span>PrivacyLeak-PII</span>
-          <span class="hf-value">
-            ${formatPercent(hf.percentage)}
-          </span>
-        </div>
-
-        <div class="bar-track">
-          <div
-            class="bar"
-            style="width:${Math.min(hf.percentage, 100)}%"
-          ></div>
-        </div>
-      </div>
-
-      <div class="bar-group">
-        <div class="bar-label">
-          <span>NHANES</span>
-          <span class="nhanes-value">
-            ${formatPercent(nhanes.percentage)}
-          </span>
-        </div>
-
-        <div class="bar-track">
-          <div
-            class="bar nhanes"
-            style="width:${Math.min(nhanes.percentage, 100)}%"
-          ></div>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(row);
+  const entries = categories.map(category => ({
+    category,
+    hf: hfData[category] || {count:0, percentage:0},
+    nhanes: nhanesData[category] || {count:0, percentage:0}
+  })).sort((a,b) => {
+    const aMax = Math.max(a.hf.percentage, a.nhanes.percentage);
+    const bMax = Math.max(b.hf.percentage, b.nhanes.percentage);
+    return bMax - aMax || a.category.localeCompare(b.category);
   });
+
+  const maxPercent = Math.max(1, ...entries.map(item => Math.max(item.hf.percentage, item.nhanes.percentage)));
+  const maxCount = Math.max(1, ...entries.map(item => Math.max(item.hf.count, item.nhanes.count)));
+
+  container.innerHTML = entries.map(item => {
+    const hfValue = metric === "count" ? item.hf.count : item.hf.percentage;
+    const nhanesValue = metric === "count" ? item.nhanes.count : item.nhanes.percentage;
+    const scale = metric === "count" ? maxCount : maxPercent;
+    const hfWidth = Math.min(100, (hfValue / scale) * 100);
+    const nhanesWidth = Math.min(100, (nhanesValue / scale) * 100);
+    const hfText = metric === "count" ? formatNumber(hfValue) : formatPercent(hfValue);
+    const nhanesText = metric === "count" ? formatNumber(nhanesValue) : formatPercent(nhanesValue);
+
+    return `
+      <div class="butterfly-row">
+        <div class="butterfly-side left">
+          <div class="butterfly-track" aria-hidden="true">
+            <div class="butterfly-bar privacy" style="width:${hfWidth}%"></div>
+          </div>
+          <span class="butterfly-value">${hfText}</span>
+        </div>
+        <div class="butterfly-center">${escapeHtml(item.category)}</div>
+        <div class="butterfly-side right">
+          <div class="butterfly-track" aria-hidden="true">
+            <div class="butterfly-bar nhanes" style="width:${nhanesWidth}%"></div>
+          </div>
+          <span class="butterfly-value">${nhanesText}</span>
+        </div>
+      </div>`;
+  }).join("");
 }
 
 
-function renderDifference(hfData, nhanesData) {
-  const container =
-    document.getElementById("differenceView");
+function renderDifference(hfData, nhanesData, metric = "percentage") {
+  const container = document.getElementById("differenceView");
+  const categories = [...new Set([...Object.keys(hfData), ...Object.keys(nhanesData)])];
 
-  const categories = new Set([
-    ...Object.keys(hfData),
-    ...Object.keys(nhanesData)
-  ]);
-
-  const differences = [...categories].map(category => {
-    const hf = hfData[category]?.percentage || 0;
-    const nhanes = nhanesData[category]?.percentage || 0;
-
-    return {
-      category,
-      difference: hf - nhanes
-    };
+  const entries = categories.map(category => ({
+    category,
+    hf: hfData[category] || {count:0, percentage:0},
+    nhanes: nhanesData[category] || {count:0, percentage:0}
+  })).sort((a,b) => {
+    const aMax = Math.max(a.hf.percentage, a.nhanes.percentage);
+    const bMax = Math.max(b.hf.percentage, b.nhanes.percentage);
+    return bMax - aMax || a.category.localeCompare(b.category);
   });
 
-  differences.sort(
-    (a, b) => Math.abs(b.difference) - Math.abs(a.difference)
-  );
+  const maxPercent = Math.max(1, ...entries.map(item => Math.max(item.hf.percentage, item.nhanes.percentage)));
 
-  container.innerHTML = "";
+  const cells = entries.map(item => {
+    const hfIntensity = Math.min(1, item.hf.percentage / maxPercent);
+    const nhanesIntensity = Math.min(1, item.nhanes.percentage / maxPercent);
+    const hfValue = metric === "count" ? item.hf.count : item.hf.percentage;
+    const nhanesValue = metric === "count" ? item.nhanes.count : item.nhanes.percentage;
+    const hfText = metric === "count" ? formatNumber(hfValue) : formatPercent(hfValue);
+    const nhanesText = metric === "count" ? formatNumber(nhanesValue) : formatPercent(nhanesValue);
 
-  differences.forEach(item => {
-    const value = item.difference;
+    // Keep the heatmap color tied to percentage, because that is the comparable measure.
+    const hfAlpha = (0.10 + hfIntensity * 0.78).toFixed(2);
+    const nhanesAlpha = (0.10 + nhanesIntensity * 0.78).toFixed(2);
 
-    const width = Math.min(
-      Math.abs(value),
-      100
-    ) / 2;
+    return `
+      <div class="heatmap-cell label">${escapeHtml(item.category)}</div>
+      <div class="heatmap-cell privacy" style="background:rgba(139,92,246,${hfAlpha})">${hfText}</div>
+      <div class="heatmap-cell nhanes" style="background:rgba(37,99,235,${nhanesAlpha})">${nhanesText}</div>`;
+  }).join("");
 
-    const element = document.createElement("div");
-    element.className = "difference-item";
-
-    element.innerHTML = `
-      <div class="category-name">
-        ${item.category}
+  container.innerHTML = `
+    <div class="heatmap-wrap">
+      <div class="heatmap" role="table" aria-label="Sensitive information representation heatmap">
+        <div class="heatmap-cell header">Category</div>
+        <div class="heatmap-cell header">PrivacyLeak-PII</div>
+        <div class="heatmap-cell header">NHANES</div>
+        ${cells}
       </div>
-
-      <div class="difference-track">
-        <div class="difference-center"></div>
-
-        ${
-          value >= 0
-            ? `<div
-                class="difference-positive"
-                style="width:${width}%"
-              ></div>`
-            : `<div
-                class="difference-negative"
-                style="width:${width}%"
-              ></div>`
-        }
-      </div>
-
-      <div class="difference-value">
-        ${value >= 0 ? "+" : ""}
-        ${formatPercent(value)}
-      </div>
-    `;
-
-    container.appendChild(element);
-  });
+      <div class="heatmap-legend"><span>Lower</span><div class="heatmap-gradient" aria-hidden="true"></div><span>Higher percentage of records</span></div>
+    </div>`;
 }
 
-
-/* ---------- Metric selector ---------- */
 
 function updateComparisonMetric(metric) {
-  document.querySelectorAll(".category-row").forEach(row => {
-    const hfCount = Number(row.dataset.hfCount);
-    const nhanesCount = Number(row.dataset.nhanesCount);
-    const hfPercentage = Number(row.dataset.hfPercentage);
-    const nhanesPercentage = Number(row.dataset.nhanesPercentage);
-    row.querySelector(".hf-value").textContent =
-      metric === "count" ? formatNumber(hfCount) : formatPercent(hfPercentage);
-    row.querySelector(".nhanes-value").textContent =
-      metric === "count" ? formatNumber(nhanesCount) : formatPercent(nhanesPercentage);
-  });
+  // Re-render both views so the selected metric stays synchronized.
+  if (window.__comparisonData) {
+    renderCategoryComparison(window.__comparisonData.hf, window.__comparisonData.nhanes, metric);
+    renderDifference(window.__comparisonData.hf, window.__comparisonData.nhanes, metric);
+  }
 }
 
 
@@ -807,8 +790,9 @@ async function initializeComparison() {
     const nhanesAnalysis = analyzeNHANES(nhanesRows);
     const categories = new Set([...Object.keys(hfAnalysis), ...Object.keys(nhanesAnalysis)]);
     document.getElementById("category-total").textContent = categories.size;
-    renderCategoryComparison(hfAnalysis, nhanesAnalysis);
-    renderDifference(hfAnalysis, nhanesAnalysis);
+    window.__comparisonData = { hf: hfAnalysis, nhanes: nhanesAnalysis };
+    renderCategoryComparison(hfAnalysis, nhanesAnalysis, "percentage");
+    renderDifference(hfAnalysis, nhanesAnalysis, "percentage");
     document.getElementById("comparisonMetric").addEventListener("change", event => {
       updateComparisonMetric(event.target.value);
     });
