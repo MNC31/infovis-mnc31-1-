@@ -140,9 +140,9 @@
       <p class="eyebrow">Cross-dataset comparison</p>
       <h2>How is sensitive information represented?</h2>
       <p class="section-description">
-        This comparison examines how sensitive information is represented
-        across the PrivacyLeak-PII snapshot and the National Health and
-        Nutrition Examination Survey dataset used by the GitHub project.
+        This comparison describes how labeled sensitive information is represented
+        in the PrivacyLeak-PII snapshot and the National Health and Nutrition
+        Examination Survey (NHANES) dataset used by the GitHub project.
       </p>
     </div>
   </div>
@@ -194,7 +194,7 @@
     <div class="comparison-panel-header">
       <div>
         <p class="eyebrow">Visibility gap</p>
-        <h3>Where is sensitive information more represented?</h3>
+        <h3>How does sensitive information differ by dataset?</h3>
       </div>
     </div>
 
@@ -214,21 +214,21 @@
 
     <div class="interpretation-content">
       <p>
-        A higher percentage indicates that a category is more frequently
-        represented in the corresponding dataset. This does not mean that
-        the information was successfully extracted from a model, nor does
-        it establish a formal differential-privacy guarantee.
+        The two datasets use different structures. PrivacyLeak-PII identifies
+        PII categories within text records, while NHANES represents sensitive
+        information as dataset columns. The percentages therefore describe
+        representation in each available dataset; they are not directly
+        equivalent privacy measurements.
       </p>
-
       <p>
         The PrivacyLeak-PII dataset is a synthetic benchmark designed to
         study privacy leakage and machine unlearning. The local file used
         here is a snapshot rather than the complete Hugging Face dataset.
       </p>
-
       <p>
-        The comparison therefore describes <strong>representation in the
-        available data</strong>, not a measurement of privacy protection.
+        The comparison describes <strong>representation of sensitive
+        information</strong>, not model memorization, model leakage, or
+        successful machine unlearning.
       </p>
     </div>
   </div>
@@ -293,11 +293,8 @@
    ========================================================= */
 
 const COMPARISON_CONFIG = {
-  privacyLeak:
-    "./privacyleak-pii/privacyleak-pii-snapshot.csv",
-
-  nhanes:
-    "../frontend/public/data/National Health and Nutrition Examination Survey/National Health and Nutrition Examination Survey.csv"
+  privacyLeak: "./privacyleak-pii/privacyleak-pii-snapshot.csv",
+  nhanes: "https://raw.githubusercontent.com/MNC31/infovis-mnc31-1-/main/frontend/public/data/National%20Health%20and%20Nutrition%20Examination%20Survey/National%20Health%20and%20Nutrition%20Examination%20Survey.csv"
 };
 
 
@@ -308,65 +305,15 @@ const COMPARISON_CONFIG = {
  * The cost-of-living dataset may use different column names,
  * so this function looks for common variants.
  */
-const CATEGORY_PATTERNS = {
-  "Full name": [
-    "name",
-    "full_name",
-    "fullname",
-    "first_name",
-    "last_name"
-  ],
-
-  "Email": [
-    "email",
-    "email_address"
-  ],
-
-  "Phone": [
-    "phone",
-    "phone_number",
-    "telephone"
-  ],
-
-  "Address": [
-    "address",
-    "street",
-    "location"
-  ],
-
-  "Date of birth": [
-    "dob",
-    "date_of_birth",
-    "birth_date",
-    "birthday"
-  ],
-
-  "IP address": [
-    "ip",
-    "ip_address"
-  ],
-
-  "Financial": [
-    "income",
-    "salary",
-    "cost",
-    "price",
-    "rent",
-    "mortgage",
-    "expense",
-    "financial"
-  ],
-
-  "Geographic": [
-    "city",
-    "state",
-    "zip",
-    "zipcode",
-    "postal",
-    "latitude",
-    "longitude",
-    "location"
-  ]
+const NHANES_CATEGORIES = {
+  "Hepatitis B": ["hepatitis_B"],
+  "Hepatitis C": ["hepatitis_C"],
+  "Hospitalization": ["overnight_hospital"],
+  "Mental healthcare": ["mental_healthcare"],
+  "Health state": ["health_state"],
+  "Healthcare visits": ["healthcare_times"],
+  "Antacids": ["antacids"],
+  "Dietary supplements": ["dietary_supp"]
 };
 
 
@@ -514,18 +461,22 @@ function formatPercent(value) {
 
 /* ---------- Dataset analysis ---------- */
 
-function analyzeDataset(rows, categories) {
+function analyzeNHANES(rows) {
   const result = {};
-
-  Object.entries(categories).forEach(([category, patterns]) => {
-    const count = countCategory(rows, patterns);
-
-    result[category] = {
-      count,
-      percentage: percentage(count, rows.length)
-    };
+  Object.entries(NHANES_CATEGORIES).forEach(([category, fields]) => {
+    let count = 0;
+    rows.forEach(row => {
+      const found = fields.some(field => {
+        const value = row[field];
+        return value !== undefined && value !== null &&
+          String(value).trim() !== "" &&
+          String(value).trim().toLowerCase() !== "null" &&
+          String(value).trim().toLowerCase() !== "na";
+      });
+      if (found) count++;
+    });
+    result[category] = { count, percentage: percentage(count, rows.length) };
   });
-
   return result;
 }
 
@@ -550,12 +501,7 @@ function analyzePrivacyLeak(rows) {
    * to infer PII categories from column names.
    */
 
-  const possibleColumns = [
-    "piispans",
-    "pii_spans",
-    "PII spans",
-    "PII Spans"
-  ];
+  const possibleColumns = ["pii_types","piispans","pii_spans","PII spans","PII Spans"];
 
   const piiColumn = possibleColumns.find(column =>
     Object.prototype.hasOwnProperty.call(rows[0], column)
@@ -686,13 +632,13 @@ function analyzePrivacyLeak(rows) {
 
 /* ---------- Rendering ---------- */
 
-function renderCategoryComparison(hfData, costData) {
+function renderCategoryComparison(hfData, nhanesData) {
   const container =
     document.getElementById("categoryComparison");
 
   const categories = new Set([
     ...Object.keys(hfData),
-    ...Object.keys(costData)
+    ...Object.keys(nhanesData)
   ]);
 
   const sortedCategories =
@@ -706,18 +652,15 @@ function renderCategoryComparison(hfData, costData) {
       percentage: 0
     };
 
-    const cost = costData[category] || {
-      count: 0,
-      percentage: 0
-    };
+    const nhanes = nhanesData[category] || { count: 0, percentage: 0 };
 
     const row = document.createElement("div");
     row.className = "category-row";
 
     row.dataset.hfCount = hf.count;
-    row.dataset.costCount = cost.count;
+    row.dataset.nhanesCount = nhanes.count;
     row.dataset.hfPercentage = hf.percentage;
-    row.dataset.costPercentage = cost.percentage;
+    row.dataset.nhanesPercentage = nhanes.percentage;
 
     row.innerHTML = `
       <div class="category-name">
@@ -743,7 +686,7 @@ function renderCategoryComparison(hfData, costData) {
       <div class="bar-group">
         <div class="bar-label">
           <span>NHANES</span>
-          <span class="cost-value">
+          <span class="nhanes-value">
             ${formatPercent(cost.percentage)}
           </span>
         </div>
@@ -762,22 +705,22 @@ function renderCategoryComparison(hfData, costData) {
 }
 
 
-function renderDifference(hfData, costData) {
+function renderDifference(hfData, nhanesData) {
   const container =
     document.getElementById("differenceView");
 
   const categories = new Set([
     ...Object.keys(hfData),
-    ...Object.keys(costData)
+    ...Object.keys(nhanesData)
   ]);
 
   const differences = [...categories].map(category => {
     const hf = hfData[category]?.percentage || 0;
-    const cost = costData[category]?.percentage || 0;
+    const nhanes = nhanesData[category]?.percentage || 0;
 
     return {
       category,
-      difference: hf - cost
+      difference: hf - nhanes
     };
   });
 
@@ -835,28 +778,13 @@ function renderDifference(hfData, costData) {
 function updateComparisonMetric(metric) {
   document.querySelectorAll(".category-row").forEach(row => {
     const hfCount = Number(row.dataset.hfCount);
-    const costCount = Number(row.dataset.costCount);
-
+    const nhanesCount = Number(row.dataset.nhanesCount);
     const hfPercentage = Number(row.dataset.hfPercentage);
-    const costPercentage = Number(row.dataset.costPercentage);
-
-    const hfValue =
-      metric === "count"
-        ? formatNumber(hfCount)
-        : formatPercent(hfPercentage);
-
-    const costValue =
-      metric === "count"
-        ? formatNumber(costCount)
-        : formatPercent(costPercentage);
-
-    row.querySelector(".hf-value").textContent = hfValue;
-    row.querySelector(".cost-value").textContent = costValue;
-
-    /*
-     * Bars always use percentage because this keeps the visual
-     * comparison meaningful even when dataset sizes differ.
-     */
+    const nhanesPercentage = Number(row.dataset.nhanesPercentage);
+    row.querySelector(".hf-value").textContent =
+      metric === "count" ? formatNumber(hfCount) : formatPercent(hfPercentage);
+    row.querySelector(".nhanes-value").textContent =
+      metric === "count" ? formatNumber(nhanesCount) : formatPercent(nhanesPercentage);
   });
 }
 
@@ -865,90 +793,32 @@ function updateComparisonMetric(metric) {
 
 async function initializeComparison() {
   try {
-    const [hfResponse, costResponse] =
-      await Promise.all([
-        fetch(COMPARISON_CONFIG.privacyLeak),
-        fetch(COMPARISON_CONFIG.costOfLiving)
-      ]);
-
-    if (!hfResponse.ok) {
-      throw new Error(
-        "Could not load PrivacyLeak-PII snapshot."
-      );
-    }
-
-    if (!costResponse.ok) {
-      throw new Error(
-        "Could not load cost-of-living dataset."
-      );
-    }
-
-    const hfCSV = await hfResponse.text();
-    const costCSV = await costResponse.text();
-
-    const hfRows = parseCSV(hfCSV);
-    const costRows = parseCSV(costCSV);
-
-    document.getElementById("hf-total").textContent =
-      formatNumber(hfRows.length);
-
-    document.getElementById("cost-total").textContent =
-      formatNumber(costRows.length);
-
-    const hfAnalysis =
-      analyzePrivacyLeak(hfRows);
-
-    const costAnalysis =
-      analyzeDataset(
-        costRows,
-        CATEGORY_PATTERNS
-      );
-
-    const categories = new Set([
-      ...Object.keys(hfAnalysis),
-      ...Object.keys(costAnalysis)
+    const [hfResponse, nhanesResponse] = await Promise.all([
+      fetch(COMPARISON_CONFIG.privacyLeak),
+      fetch(COMPARISON_CONFIG.nhanes)
     ]);
-
-    document.getElementById("category-total").textContent =
-      categories.size;
-
-    renderCategoryComparison(
-      hfAnalysis,
-      costAnalysis
-    );
-
-    renderDifference(
-      hfAnalysis,
-      costAnalysis
-    );
-
-    const selector =
-      document.getElementById("comparisonMetric");
-
-    selector.addEventListener("change", event => {
+    if (!hfResponse.ok) throw new Error("Could not load PrivacyLeak-PII snapshot.");
+    if (!nhanesResponse.ok) throw new Error("Could not load NHANES dataset.");
+    const hfRows = parseCSV(await hfResponse.text());
+    const nhanesRows = parseCSV(await nhanesResponse.text());
+    document.getElementById("hf-total").textContent = formatNumber(hfRows.length);
+    document.getElementById("nhanes-total").textContent = formatNumber(nhanesRows.length);
+    const hfAnalysis = analyzePrivacyLeak(hfRows);
+    const nhanesAnalysis = analyzeNHANES(nhanesRows);
+    const categories = new Set([...Object.keys(hfAnalysis), ...Object.keys(nhanesAnalysis)]);
+    document.getElementById("category-total").textContent = categories.size;
+    renderCategoryComparison(hfAnalysis, nhanesAnalysis);
+    renderDifference(hfAnalysis, nhanesAnalysis);
+    document.getElementById("comparisonMetric").addEventListener("change", event => {
       updateComparisonMetric(event.target.value);
     });
-
   } catch (error) {
     console.error(error);
-
-    document.getElementById(
-      "categoryComparison"
-    ).innerHTML = `
-      <div class="comparison-loading">
-        Unable to load the comparison data.
-        Please check that both CSV files are present
-        in the expected folders.
-      </div>
-    `;
-
-    document.getElementById(
-      "differenceView"
-    ).innerHTML = "";
+    document.getElementById("categoryComparison").innerHTML =
+      '<div class="comparison-loading">Unable to load the comparison data. Please check that both source files are available.</div>';
+    document.getElementById("differenceView").innerHTML = "";
   }
 }
-
-
 initializeComparison();
   </script>
 </body>
