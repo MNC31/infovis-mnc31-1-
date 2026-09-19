@@ -293,7 +293,7 @@
    ========================================================= */
 
 const COMPARISON_CONFIG = {
-  privacyLeak: "./privacyleak-pii/privacyleak-pii-snapshot.csv",
+  privacyLeak: "https://raw.githubusercontent.com/MNC31/infovis-mnc31-1-/main/huggingface/privacyleak-pii/privacyleak-pii-snapshot.csv",
   nhanes: "https://raw.githubusercontent.com/MNC31/infovis-mnc31-1-/main/frontend/public/data/National%20Health%20and%20Nutrition%20Examination%20Survey/National%20Health%20and%20Nutrition%20Examination%20Survey.csv"
 };
 
@@ -497,7 +497,7 @@ function analyzePrivacyLeak(rows) {
    * Example:
    * pii_types = "name;ssn;phone;email"
    *
-   * We therefore read piispans directly rather than trying
+   * We therefore read the PII category field directly rather than trying
    * to infer PII categories from column names.
    */
 
@@ -694,7 +694,7 @@ function renderCategoryComparison(hfData, nhanesData) {
         <div class="bar-track">
           <div
             class="bar nhanes"
-            style="width:${Math.min(cost.percentage, 100)}%"
+            style="width:${Math.min(nhanes.percentage, 100)}%"
           ></div>
         </div>
       </div>
