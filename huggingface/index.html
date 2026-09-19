@@ -234,7 +234,7 @@
   </div>
 </section>
     <footer>
-      <p><strong>Dataset attribution:</strong> <a href="https://huggingface.co/datasets/raayraay/privacyleak-pii" target="_blank" rel="noopener noreferrer">raayraay/privacyleak-pii on Hugging Face</a>. Source viewer fields represented in the original artifact: <code>text</code>, <code>piispans</code>, <code>contexttype</code>, <code>locale</code>, <code>iscanary</code>, <code>sampleid</code>, and <code>inforgetset</code>.</p>
+      <p><strong>Dataset attribution:</strong> <a href="https://huggingface.co/datasets/raayraay/privacyleak-pii" target="_blank" rel="noopener noreferrer">raayraay/privacyleak-pii on Hugging Face</a>. The local snapshot fields used by this page include <code>sample_id</code>, <code>context_type</code>, <code>locale</code>, <code>is_canary</code>, <code>in_forget_set</code>, <code>pii_types</code>, and <code>pii_count</code>.</p>
       <p>Data-handling note: all observations embedded in this standalone page are source-derived public-viewer summaries. The page makes no network request, does not invent replacement values, and does not present these rows as evidence of real-world personal-data exposure.</p>
     </footer>
   </main>
@@ -302,8 +302,8 @@ const COMPARISON_CONFIG = {
  * Maps possible column names to conceptual categories.
  *
  * The PrivacyLeak-PII snapshot contains explicit PII labels.
- * The cost-of-living dataset may use different column names,
- * so this function looks for common variants.
+ * The NHANES dataset uses health-related sensitive fields,
+ * so this function maps those fields to comparison categories.
  */
 const NHANES_CATEGORIES = {
   "Hepatitis B": ["hepatitis_B"],
@@ -490,12 +490,12 @@ function analyzePrivacyLeak(rows) {
   if (!rows.length) return {};
 
   /*
-   * The local PrivacyLeak-PII snapshot does not use a
-   * "pii_type" column. Its PII information is represented
-   * in the piispans field.
+   * The local PrivacyLeak-PII snapshot uses the `pii_types` column.
+   * It contains semicolon-separated category labels such as
+   * `name;ssn;phone;address`.
    *
    * Example:
-   * piispans = ["name","ssn","phone","email"]
+   * pii_types = "name;ssn;phone;email"
    *
    * We therefore read piispans directly rather than trying
    * to infer PII categories from column names.
@@ -509,7 +509,7 @@ function analyzePrivacyLeak(rows) {
 
   if (!piiColumn) {
     console.warn(
-      "PrivacyLeak-PII snapshot does not contain a piispans column.",
+      "PrivacyLeak-PII snapshot does not contain a recognized PII category column.",
       Object.keys(rows[0])
     );
 
@@ -687,13 +687,13 @@ function renderCategoryComparison(hfData, nhanesData) {
         <div class="bar-label">
           <span>NHANES</span>
           <span class="nhanes-value">
-            ${formatPercent(cost.percentage)}
+            ${formatPercent(nhanes.percentage)}
           </span>
         </div>
 
         <div class="bar-track">
           <div
-            class="bar cost"
+            class="bar nhanes"
             style="width:${Math.min(cost.percentage, 100)}%"
           ></div>
         </div>
